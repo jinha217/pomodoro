@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>예쁜 뽀모도로 타이머</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap');
+        
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #f3f4f6; /* 부드러운 배경색 */
+            /* 배경 그라데이션 애니메이션 */
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+
+        /* 네모난 시계 컨테이너 스타일링 (부드러운 그림자와 모서리) */
+        .timer-container {
+            background: white;
+            border-radius: 2rem; /* 네모난 모양이지만 모서리는 둥글게 */
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08), 0 10px 20px rgba(0, 0, 0, 0.04);
+            width: 90%;
+            max-width: 400px;
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.5s ease;
+        }
+
+        .progress-ring__circle {
+            transition: stroke-dashoffset 1s linear, stroke 0.5s ease;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        /* 버튼 호버 및 액티브 효과 */
+        .btn {
+            transition: all 0.2s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="timer-container" id="app-container">
+        <!-- 상태 표시 (공부 중 / 휴식 중) -->
+        <h2 id="status-text" class="text-2xl font-bold text-gray-700 mb-6 tracking-wide">
+            집중할 시간이에요 📚
+        </h2>
+
+        <!-- 동그란 시계 부분 -->
+        <div class="relative flex justify-center items-center mb-8">
+            <!-- SVG 프로그레스 바 -->
+            <svg class="w-64 h-64" viewBox="0 0 240 240">
+                <!-- 예쁜 색깔을 위한 그라데이션 정의 -->
+                <defs>
+                    <!-- 공부 시간용 그라데이션 (코랄 -> 핑크) -->
+                    <linearGradient id="work-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#FF512F" />
+                        <stop offset="100%" stop-color="#F09819" />
+                    </linearGradient>
+                    <!-- 휴식 시간용 그라데이션 (민트 -> 블루) -->
+                    <linearGradient id="break-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#02AAB0" />
+                        <stop offset="100%" stop-color="#00CDAC" />
+                    </linearGradient>
+                </defs>
+
+                <!-- 배경이 되는 회색 원 -->
+                <circle
+                    cx="120" cy="120" r="105"
+                    fill="transparent"
+                    stroke="#f3f4f6"
+                    stroke-width="16"
+                ></circle>
+                
+                <!-- 시간이 흐르면서 칠해질 프로그레스 원 -->
+                <circle
+                    id="progress-circle"
+                    class="progress-ring__circle"
+                    cx="120" cy="120" r="105"
+                    fill="transparent"
+                    stroke="url(#work-gradient)"
+                    stroke-width="16"
+                    stroke-linecap="round"
+                ></circle>
+            </svg>
+
+            <!-- 중앙 타이머 텍스트 -->
+            <div class="absolute flex flex-col items-center">
+                <span id="time-display" class="text-5xl font-extrabold text-gray-800 tracking-tighter">
+                    50:00
+                </span>
+            </div>
+        </div>
+
+        <!-- 컨트롤 버튼 그룹 -->
+        <div class="flex gap-4 w-full">
+            <button id="btn-start" class="btn flex-1 py-3 bg-gray-900 text-white font-semibold rounded-xl flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" fill-rule="evenodd"></path></svg>
+                시작
+            </button>
+            <button id="btn-pause" class="btn flex-1 py-3 bg-gray-200 text-gray-800 font-semibold rounded-xl flex items-center justify-center gap-2 hidden">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" fill-rule="evenodd"></path></svg>
+                일시정지
+            </button>
+            <button id="btn-reset" class="btn py-3 px-5 bg-gray-100 text-gray-600 font-semibold rounded-xl flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // DOM 요소 가져오기
+        const timeDisplay = document.getElementById('time-display');
+        const statusText = document.getElementById('status-text');
+        const progressCircle = document.getElementById('progress-circle');
+        const btnStart = document.getElementById('btn-start');
+        const btnPause = document.getElementById('btn-pause');
+        const btnReset = document.getElementById('btn-reset');
+
+        // 설정 값 (초 단위)
+        const WORK_TIME = 50 * 60; // 50분
+        const BREAK_TIME = 10 * 60; // 10분
+        
+        // 상태 변수
+        let timeLeft = WORK_TIME;
+        let isWorking = true; // true: 공부, false: 휴식
+        let timerInterval = null;
+
+        // 원 둘레 계산 (반지름 r=105)
+        const radius = progressCircle.r.baseVal.value;
+        const circumference = radius * 2 * Math.PI;
+
+        // 초기 원 설정
+        progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+        progressCircle.style.strokeDashoffset = circumference; // 처음에 비워진 상태로 시작
+
+        // 시간 텍스트 포맷팅 (MM:SS)
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        // UI 업데이트 로직 (텍스트, 원 프로그레스, 색상)
+        function updateUI() {
+            // 시간 텍스트 업데이트
+            timeDisplay.textContent = formatTime(timeLeft);
+
+            // 전체 시간에 따른 진행률 계산
+            const totalDuration = isWorking ? WORK_TIME : BREAK_TIME;
+            const timeElapsed = totalDuration - timeLeft;
+            const progressRatio = timeElapsed / totalDuration;
+            
+            // 시간이 지날수록 색깔이 차오르도록 offset 계산
+            const offset = circumference - (progressRatio * circumference);
+            progressCircle.style.strokeDashoffset = offset;
+
+            // 상태에 따른 텍스트와 색상 업데이트
+            if (isWorking) {
+                statusText.textContent = "집중할 시간이에요 📚";
+                progressCircle.setAttribute('stroke', 'url(#work-gradient)');
+            } else {
+                statusText.textContent = "달콤한 휴식 시간 ☕️";
+                progressCircle.setAttribute('stroke', 'url(#break-gradient)');
+            }
+        }
+
+        // 초기 UI 반영
+        updateUI();
+
+        // 타이머 시작
+        function startTimer() {
+            if (timerInterval) return; // 이미 실행 중이면 무시
+
+            // 버튼 상태 토글
+            btnStart.classList.add('hidden');
+            btnPause.classList.remove('hidden');
+
+            timerInterval = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateUI();
+                } else {
+                    // 시간이 다 된 경우 상태 전환 (공부 <-> 휴식)
+                    isWorking = !isWorking;
+                    timeLeft = isWorking ? WORK_TIME : BREAK_TIME;
+                    
+                    // 전환 시 애니메이션이 어색하지 않게 초기화
+                    progressCircle.style.transition = 'none';
+                    progressCircle.style.strokeDashoffset = circumference;
+                    
+                    // 다음 프레임에서 트랜지션 복구
+                    setTimeout(() => {
+                        progressCircle.style.transition = 'stroke-dashoffset 1s linear, stroke 0.5s ease';
+                        updateUI();
+                    }, 50);
+                }
+            }, 1000);
+        }
+
+        // 타이머 일시정지
+        function pauseTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            
+            // 버튼 상태 토글
+            btnPause.classList.add('hidden');
+            btnStart.classList.remove('hidden');
+        }
+
+        // 타이머 초기화 (현재 상태의 처음으로)
+        function resetTimer() {
+            pauseTimer();
+            timeLeft = isWorking ? WORK_TIME : BREAK_TIME;
+            
+            // 프로그레스 바 애니메이션 없이 즉각 초기화
+            progressCircle.style.transition = 'none';
+            progressCircle.style.strokeDashoffset = circumference;
+            
+            // 잠시 후 트랜지션 다시 켜기
+            setTimeout(() => {
+                progressCircle.style.transition = 'stroke-dashoffset 1s linear, stroke 0.5s ease';
+            }, 50);
+            
+            updateUI();
+        }
+
+        // 이벤트 리스너 등록
+        btnStart.addEventListener('click', startTimer);
+        btnPause.addEventListener('click', pauseTimer);
+        btnReset.addEventListener('click', resetTimer);
+
+    </script>
+</body>
+</html>
